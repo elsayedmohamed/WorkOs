@@ -1,8 +1,24 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import '../screens/profile_page.dart';
 
 class AllworkersWidget extends StatefulWidget {
-  const AllworkersWidget({Key? key}) : super(key: key);
+  final String userUid;
+  final String position;
+  final String name;
+  final String phone;
+  final String imageUrl;
 
+  const AllworkersWidget({
+    super.key,
+    required this.userUid,
+    required this.position,
+    required this.name,
+    required this.phone,
+    required this.imageUrl,
+  });
   @override
   State<AllworkersWidget> createState() => _AllworkersWidgetState();
 }
@@ -13,7 +29,18 @@ class _AllworkersWidgetState extends State<AllworkersWidget> {
     return Card(
       elevation: 8,
       child: ListTile(
-        onTap: () {},
+        onTap: () {
+            FirebaseAuth auth = FirebaseAuth.instance;
+                final User? user = auth.currentUser;
+                final userUid = user!.uid;
+
+               // String userUid = FirebaseAuth.instance.currentUser!.uid;
+                navigateToPage(
+                    context,
+                    ProfilePage(
+                      userUid: widget.userUid,
+                    ));
+        },
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 20,
           vertical: 10,
@@ -35,7 +62,7 @@ class _AllworkersWidgetState extends State<AllworkersWidget> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
               child: Image.network(
-                'https://heavy.com/wp-content/uploads/2016/05/gettyimages-2123365.jpg?quality=65&strip=all',
+                widget.imageUrl,
                 width: 200,
                 height: 200,
                 fit: BoxFit.cover,
@@ -43,11 +70,11 @@ class _AllworkersWidgetState extends State<AllworkersWidget> {
             ),
           ),
         ),
-        title: const Text(
-          'Name',
+        title: Text(
+          widget.name,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -59,22 +86,44 @@ class _AllworkersWidgetState extends State<AllworkersWidget> {
               Icons.linear_scale,
               color: Colors.pink.shade800,
             ),
-            const Text(
-              'Position in the company / 01123627733',
+            Text(
+              '${widget.position} Tel: ${widget.phone}',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
               ),
             ),
           ],
         ),
-        trailing: Icon(
-          Icons.mail,
-          size: 30,
-          color: Colors.pink[800],
+        trailing: IconButton(
+          icon: Icon(
+            Icons.mail,
+            size: 30,
+            color: Colors.pink[800],
+          ),
+          onPressed: () {
+            sendEmailMessage();
+          },
         ),
       ),
     );
+  }
+
+  void sendEmailMessage() async {
+    final url = Uri.parse('mailto:$widget. email');
+
+    await launchUrl(
+      url,
+      webViewConfiguration: const WebViewConfiguration(enableJavaScript: false),
+    ).then((value) {
+      print(value);
+    }).catchError((e) {
+      print(e.toString());
+    });
+  }
+    Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
+    return await Navigator.push(
+        context, MaterialPageRoute(builder: (context) => screen));
   }
 }

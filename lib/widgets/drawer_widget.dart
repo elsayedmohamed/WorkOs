@@ -1,11 +1,13 @@
 // ignore_for_file: must_be_immutable
 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:workos/constants.dart';
 import 'package:workos/inner_screens/add_task.dart';
 import 'package:workos/screens/all_workwers.dart';
 import 'package:workos/screens/profile_page.dart';
 import 'package:workos/screens/tasks.dart';
+import 'package:workos/user_state.dart';
 
 class DrawerWidget extends StatelessWidget {
   const DrawerWidget({Key? key}) : super(key: key);
@@ -48,7 +50,16 @@ class DrawerWidget extends StatelessWidget {
               }),
           ListTielsWidget(
               onTap: () {
-                navigateToPage(context, ProfilePage());
+                FirebaseAuth auth = FirebaseAuth.instance;
+                final User? user = auth.currentUser;
+                final userUid = user!.uid;
+
+               // String userUid = FirebaseAuth.instance.currentUser!.uid;
+                navigateToPage(
+                    context,
+                    ProfilePage(
+                      userUid: userUid,
+                    ));
               },
               text: 'My account',
               icon: Icons.settings_outlined),
@@ -56,14 +67,14 @@ class DrawerWidget extends StatelessWidget {
               text: 'Registerd workers',
               icon: Icons.workspaces_outline,
               onTap: () {
-                navigateToPage(context, AllWorkers());
+                navigateToPage(context, const AllWorkers());
               }),
           ListTielsWidget(
               text: 'Add task',
               icon: Icons.add_task_outlined,
               onTap: () {
                 print('task add presed');
-                navigateToPage(context, AddTaskScreen());
+                navigateToPage(context, const AddTaskScreen());
               }),
           const Divider(
             thickness: 1,
@@ -122,6 +133,14 @@ void showsignOutdialog(BuildContext context) {
             ),
             TextButton(
               onPressed: () {
+                final FirebaseAuth auth = FirebaseAuth.instance;
+
+                auth.signOut();
+                Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                        builder: ((context) => const UserStateScreen())),
+                    (route) => false);
                 Navigator.canPop(context) ? Navigator.pop(context) : null;
               },
               child: const Text(

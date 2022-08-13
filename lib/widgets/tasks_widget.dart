@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 
 import '../inner_screens/task_details.dart';
@@ -16,7 +18,7 @@ class _TaskWidgetState extends State<TaskWidget> {
       elevation: 8,
       child: ListTile(
         onTap: () {
-      navigateToPage(context, TaskDetailScreen()) ;   
+          navigateToPage(context, const TaskDetailScreen());
         },
         onLongPress: () {
           showDialog(
@@ -33,7 +35,9 @@ class _TaskWidgetState extends State<TaskWidget> {
                             Icons.delete,
                             color: Colors.red,
                           ),
-                          SizedBox(width: 10,),
+                          SizedBox(
+                            width: 10,
+                          ),
                           Text(
                             'Delete',
                             style: TextStyle(
@@ -103,7 +107,8 @@ class _TaskWidgetState extends State<TaskWidget> {
     );
   }
 }
- Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
-    return await Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => screen));
-  }
+
+Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
+  return await Navigator.push(
+      context, MaterialPageRoute(builder: (context) => screen));
+}

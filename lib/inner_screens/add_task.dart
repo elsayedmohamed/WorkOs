@@ -1,4 +1,6 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:workos/constants.dart';
@@ -22,7 +24,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   FocusNode emailFocusNode = FocusNode();
   FocusNode passwordFocusNode = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
+  Timestamp? deadLineTimeStamp;
   void formLoginSubmit() {
     var isValid = _formKey.currentState!.validate();
     if (isValid) {
@@ -39,12 +41,14 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2100),
     );
-    if (pickedDate!=null) {
-  setState(() {
-    deadLineDateController.text =
-        '${pickedDate.year}-${pickedDate.month}-${pickedDate.day}';
-  });
-}
+    if (pickedDate != null) {
+      setState(() {
+        deadLineTimeStamp = Timestamp.fromMicrosecondsSinceEpoch(
+            pickedDate.microsecondsSinceEpoch);
+        deadLineDateController.text =
+            '${pickedDate.year}-${pickedDate.month}-${pickedDate.day}';
+      });
+    }
   }
 
   @override
@@ -165,7 +169,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                         side: BorderSide.none,
                       ),
                       onPressed: () {
-                        formLoginSubmit();
+                        saveTaskData();
                       },
                       child: Row(
                         mainAxisSize: MainAxisSize.max,
@@ -202,6 +206,37 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     );
   }
 
+  String? url;
+  Future<void> saveTaskData() async {
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    User? user = auth.currentUser;
+    final userUid = user!.uid;
+    FirebaseStorage storage = FirebaseStorage.instance;
+
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('userImages')
+        .child('${auth.currentUser!.uid}.jpg');
+
+    // await ref.putFile(imageFile!);
+    // url = await ref.getDownloadURL();
+
+    FirebaseFirestore store = FirebaseFirestore.instance;
+    await store.collection('tasks').doc(auth.currentUser!.uid).set({
+      'taskId': 'taskId',
+      'uploadedBy': userUid,
+      'taskCategory': categoryController.text,
+      'taskTitle': titleController.text,
+      'taskDescription': descriptionController.text,
+      // 'position': categoryController.text,
+      'deadLineDate': deadLineDateController.text,
+      'deadLineDateTimeStamp': deadLineTimeStamp,
+      'taskComments': [],
+      'isDone': false,
+      'createdAt': Timestamp.now(),
+    });
+  }
+
   Future<dynamic> showCategoriesDialog(BuildContext context) {
     return showDialog(
         context: context,
@@ -211,7 +246,9 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
               'Task category',
               style: TextStyle(color: Colors.pink.shade800),
             ),
-            content: Container(
+            content: SizedBox(
+              height: 200,
+              width: 100,
               child: ListView.builder(
                 shrinkWrap: true,
                 itemCount: AppConstants.category.length,

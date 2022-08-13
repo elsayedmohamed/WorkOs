@@ -1,11 +1,15 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:workos/screens/auth/login.dart';
+import 'package:workos/user_state.dart';
 
 import '../../constants.dart';
 
@@ -25,41 +29,80 @@ class _SignUpScreenState extends State<SignUpScreen>
   TextEditingController passController = TextEditingController();
   TextEditingController fullNameController = TextEditingController();
   TextEditingController positionCPController = TextEditingController();
+  TextEditingController phoneController = TextEditingController();
   FocusNode emailFocusNode = FocusNode();
   FocusNode passwordFocusNode = FocusNode();
   FocusNode fullNameFocusNode = FocusNode();
   FocusNode positionFocusNode = FocusNode();
   FocusNode phoneFocusNode = FocusNode();
 
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  bool isLoading = false;
   bool _obsecured = true;
 
   File? imageFile;
 
   final formKey = GlobalKey<FormState>();
 
-  void validSignUpForm() {
-    final isValid = formKey.currentState!.validate();
-    if (isValid) {
-      print(' form   Valid ');
-    } else {
-      print(' form  not Valid ');
-    }
+  Future<UserCredential> signUpByEmail() async {
+    return await auth.createUserWithEmailAndPassword(
+      email: emailController.text.toLowerCase().trim(),
+      password: passController.text.trim(),
+    );
   }
 
-  @override
-  void dispose() {
-    _animationController.dispose();
-    emailController.dispose();
-    passController.dispose();
-    fullNameController.dispose();
-    positionCPController.dispose();
-    emailFocusNode.dispose();
-    passwordFocusNode.dispose();
-    fullNameFocusNode.dispose();
-    positionFocusNode.dispose();
-    phoneFocusNode.dispose();
+  void validSignUpForm() async {
+    final isValid = formKey.currentState!.validate();
+    if (imageFile != null) {
+      if (isValid) {
+        setState(() {
+          isLoading = true;
+        });
 
-    super.dispose();
+        await signUpByEmail().then((value) {
+          saveUserSignUpData();
+          Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(
+                  builder: ((context) => const UserStateScreen())),
+              (route) => false);
+        }).catchError((e) {
+          setState(() {
+            isLoading = false;
+            showSnakError(e.toString());
+          });
+        });
+      }
+    } else {
+      showSnakError('Image is required');
+    }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  String? url;
+  Future<void> saveUserSignUpData() async {
+    FirebaseStorage storage = FirebaseStorage.instance;
+
+    final ref = FirebaseStorage.instance
+        .ref()
+        .child('userImages')
+        .child('${auth.currentUser!.uid}.jpg');
+
+    await ref.putFile(imageFile!);
+    url = await ref.getDownloadURL();
+
+    FirebaseFirestore store = FirebaseFirestore.instance;
+    await store.collection('users').doc(auth.currentUser!.uid).set({
+      'name': fullNameController.text,
+      'email': emailController.text,
+      'phone': phoneController.text,
+      'position': positionCPController.text,
+      'date': Timestamp.now(),
+      'image': '$url',
+      'id':auth.currentUser!.uid,
+    });
   }
 
   @override
@@ -82,6 +125,23 @@ class _SignUpScreenState extends State<SignUpScreen>
     _animationController.forward();
 
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    emailController.dispose();
+    passController.dispose();
+    fullNameController.dispose();
+    positionCPController.dispose();
+    // passController.dispose();
+    emailFocusNode.dispose();
+    passwordFocusNode.dispose();
+    fullNameFocusNode.dispose();
+    positionFocusNode.dispose();
+    phoneFocusNode.dispose();
+
+    super.dispose();
   }
 
   @override
@@ -370,8 +430,7 @@ class _SignUpScreenState extends State<SignUpScreen>
                       textInputAction: TextInputAction.next,
                       onEditingComplete: () => FocusScope.of(context)
                           .requestFocus(positionFocusNode),
-                      obscureText: _obsecured,
-                      controller: passController,
+                      controller: phoneController,
                       keyboardType: TextInputType.phone,
                       style: const TextStyle(
                         color: Colors.white,
@@ -448,37 +507,42 @@ class _SignUpScreenState extends State<SignUpScreen>
               const SizedBox(
                 height: 20,
               ),
-              MaterialButton(
-                height: 55,
-                color: Colors.pink.shade600,
-                elevation: 10,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                  side: BorderSide.none,
-                ),
-                onPressed: validSignUpForm,
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'SignUp',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+              isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                      color: Colors.pink,
+                    ))
+                  : MaterialButton(
+                      height: 55,
+                      color: Colors.pink.shade600,
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                        side: BorderSide.none,
+                      ),
+                      onPressed: validSignUpForm,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text(
+                            'SignUp',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
+                          Icon(
+                            Icons.person_add,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    Icon(
-                      Icons.person_add,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
             ]),
           ),
         ],
@@ -490,7 +554,7 @@ class _SignUpScreenState extends State<SignUpScreen>
     XFile? pickedFile = await ImagePicker()
         .pickImage(source: ImageSource.camera, maxWidth: 1080, maxHeight: 1080);
     setState(() {
-     // imageFile = File(pickedFile!.path);
+      // imageFile = File(pickedFile!.path);
       imageCropper(pickedFile!.path);
     });
     // Navigator.pop(context);
@@ -512,7 +576,7 @@ class _SignUpScreenState extends State<SignUpScreen>
 
     if (imagecrop != null) {
       imageFile = File(imagecrop.path);
-        Navigator.pop(context);
+      Navigator.pop(context);
     }
   }
 
@@ -597,9 +661,11 @@ class _SignUpScreenState extends State<SignUpScreen>
               'Task category',
               style: TextStyle(color: Colors.pink.shade800),
             ),
-            content: Container(
+            content: SizedBox(
+              height: 200,
+              width: 50,
               child: ListView.builder(
-                shrinkWrap: true,
+                //shrinkWrap: true,
                 itemCount: AppConstants.jobsList.length,
                 physics: const BouncingScrollPhysics(),
                 itemBuilder: ((context, index) {
@@ -641,5 +707,23 @@ class _SignUpScreenState extends State<SignUpScreen>
             ],
           );
         });
+  }
+
+  void showSnakError(error) {
+    final myErrorSnack = SnackBar(
+      content: Text(error),
+      duration: const Duration(
+        seconds: 3,
+      ),
+      backgroundColor: Colors.pink,
+      shape: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      width: double.infinity,
+      behavior: SnackBarBehavior.floating,
+      elevation: 10,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(myErrorSnack);
   }
 }

@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:workos/screens/auth/login.dart';
 import 'package:workos/screens/tasks.dart';
 
 import 'screens/auth/signup.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'user_state.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const WorkOs());
 }
 
@@ -20,7 +28,7 @@ class WorkOs extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFFEDE7DC),
         primarySwatch: Colors.blue,
       ),
-      home: TasksScreen(),
+      home: const UserStateScreen(),
     );
   }
 }

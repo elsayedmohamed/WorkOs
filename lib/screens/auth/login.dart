@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:workos/screens/auth/forget_password.dart';
@@ -21,16 +22,56 @@ class _LoginScreenState extends State<LoginScreen>
   FocusNode emailFocusNode = FocusNode();
   FocusNode passwordFocusNode = FocusNode();
   bool _obsecured = true;
-
+  final FirebaseAuth auth = FirebaseAuth.instance;
   final formKey = GlobalKey<FormState>();
 
-  void formLoginSubmit() {
+  void showSnakError(error) {
+    final myErrorSnack = SnackBar(
+      content: Text(error),
+      duration: const Duration(
+        seconds: 3,
+      ),
+      backgroundColor: Colors.pink,
+      shape: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      width: double.infinity,
+      behavior: SnackBarBehavior.floating,
+      elevation: 10,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(myErrorSnack);
+  }
+
+  bool isLoading = false;
+
+  void validSignInForm() async {
     final isValid = formKey.currentState!.validate();
     if (isValid) {
+      setState(() {
+        isLoading = true;
+      });
+
+      await signInByEmail().then((value) {}).catchError((e) {
+        setState(() {
+          isLoading = false;
+          showSnakError(e.toString());
+        });
+      });
       print(' form   Valid ');
     } else {
       print(' form  not Valid ');
     }
+    setState(() {
+      isLoading = false;
+    });
+  }
+
+  Future<UserCredential> signInByEmail() async {
+    return await auth.signInWithEmailAndPassword(
+      email: emailController.text.toLowerCase().trim(),
+      password: passController.text.trim(),
+    );
   }
 
   @override
@@ -103,7 +144,7 @@ class _LoginScreenState extends State<LoginScreen>
                 text: TextSpan(
                   children: [
                     const TextSpan(
-                      text: 'Don\'t have an account ?',
+                      text: 'Don\'t have an account ? ',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
@@ -122,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen>
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -184,7 +225,7 @@ class _LoginScreenState extends State<LoginScreen>
                       }),
                       focusNode: passwordFocusNode,
                       textInputAction: TextInputAction.done,
-                      onEditingComplete: formLoginSubmit,
+                      onEditingComplete: validSignInForm,
                       obscureText: _obsecured,
                       controller: passController,
                       keyboardType: TextInputType.visiblePassword,
@@ -247,37 +288,39 @@ class _LoginScreenState extends State<LoginScreen>
                       ),
                     ),
                   )),
-              MaterialButton(
-                height: 55,
-                color: Colors.pink.shade600,
-                elevation: 10,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(13),
-                  side: BorderSide.none,
-                ),
-                onPressed: formLoginSubmit,
-                child: Row(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: const [
-                    Text(
-                      'Login',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+              isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : MaterialButton(
+                      height: 55,
+                      color: Colors.pink.shade600,
+                      elevation: 10,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(13),
+                        side: BorderSide.none,
+                      ),
+                      onPressed: validSignInForm,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: const [
+                          Text(
+                            'Login',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 5,
+                          ),
+                          Icon(
+                            Icons.login,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(
-                      width: 5,
-                    ),
-                    Icon(
-                      Icons.login,
-                      color: Colors.white,
-                    ),
-                  ],
-                ),
-              ),
             ]),
           ),
         ],
