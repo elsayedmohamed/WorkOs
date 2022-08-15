@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/utils.dart';
 import '../screens/profile_page.dart';
 
 class AllworkersWidget extends StatefulWidget {
@@ -122,8 +123,5 @@ class _AllworkersWidgetState extends State<AllworkersWidget> {
       print(e.toString());
     });
   }
-    Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
-    return await Navigator.push(
-        context, MaterialPageRoute(builder: (context) => screen));
-  }
+   
 }

@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:workos/screens/auth/forget_password.dart';
 import 'package:workos/screens/auth/signup.dart';
 
+import '../../core/utils.dart';
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
 
@@ -25,23 +27,7 @@ class _LoginScreenState extends State<LoginScreen>
   final FirebaseAuth auth = FirebaseAuth.instance;
   final formKey = GlobalKey<FormState>();
 
-  void showSnakError(error) {
-    final myErrorSnack = SnackBar(
-      content: Text(error),
-      duration: const Duration(
-        seconds: 3,
-      ),
-      backgroundColor: Colors.pink,
-      shape: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      width: double.infinity,
-      behavior: SnackBarBehavior.floating,
-      elevation: 10,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(myErrorSnack);
-  }
+ 
 
   bool isLoading = false;
 
@@ -55,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen>
       await signInByEmail().then((value) {}).catchError((e) {
         setState(() {
           isLoading = false;
-          showSnakError(e.toString());
+          showSnakError(e.toString(),context);
         });
       });
       print(' form   Valid ');

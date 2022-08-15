@@ -1,11 +1,29 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:toast/toast.dart';
 
+import '../core/utils.dart';
 import '../inner_screens/task_details.dart';
 
 class TaskWidget extends StatefulWidget {
-  const TaskWidget({Key? key}) : super(key: key);
+  final String title;
+  final String subTitle;
+  final String descrption;
+  final String taskId;
+
+  bool isDone = false;
+  final String uploadedBy;
+
+  TaskWidget({
+    Key? key,
+    required this.title,
+    required this.subTitle,
+    required this.descrption,
+    required this.isDone,
+    required this.uploadedBy,
+    required this.taskId,
+  }) : super(key: key);
 
   @override
   State<TaskWidget> createState() => _TaskWidgetState();
@@ -18,7 +36,12 @@ class _TaskWidgetState extends State<TaskWidget> {
       elevation: 8,
       child: ListTile(
         onTap: () {
-          navigateToPage(context, const TaskDetailScreen());
+          navigateToPage(
+              context,
+              TaskDetailScreen(
+                taskId: widget.taskId,
+                uploadedBy: widget.uploadedBy,
+              ));
         },
         onLongPress: () {
           showDialog(
@@ -27,7 +50,26 @@ class _TaskWidgetState extends State<TaskWidget> {
                 return AlertDialog(
                   actions: [
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        FirebaseAuth auth = FirebaseAuth.instance;
+                        User? user = auth.currentUser;
+                        final uuid = user!.uid;
+
+                        if (uuid == widget.uploadedBy) {
+                          setState(() {
+                            FirebaseFirestore.instance
+                                .collection('tasks')
+                                .doc(widget.taskId)
+                                .delete();
+                            Navigator.pop(context);
+                          });
+                        } else {
+                          showToast('Task creater can be only delete this task',
+                          context,
+                              duration: 4);
+                          Navigator.pop(context);
+                        }
+                      },
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
@@ -69,14 +111,20 @@ class _TaskWidgetState extends State<TaskWidget> {
             radius: 20,
             // https://image.flaticon.com/icons/png/128/850/850960.png
             child: Image.network(
-                'https://vignette.wikia.nocookie.net/scream-queens/images/d/d6/Right.png/revision/latest?cb=20151213161824'),
+              widget.isDone
+                  ? 'https://vignette.wikia.nocookie.net/scream-queens/images/d/d6/Right.png/revision/latest?cb=20151213161824'
+                  : 'https://www.clipartmax.com/png/full/366-3668222_funny-of-timers-clipart-waste-time-icon-png.png',
+              fit: BoxFit.fill,
+              height: 100,
+              width: 100,
+            ),
           ),
         ),
-        title: const Text(
-          'title',
+        title: Text(
+          widget.title,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: TextStyle(
+          style: const TextStyle(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -88,11 +136,11 @@ class _TaskWidgetState extends State<TaskWidget> {
               Icons.linear_scale,
               color: Colors.pink.shade800,
             ),
-            const Text(
-              'Subtitle  description ',
+            Text(
+              '${widget.subTitle} - ${widget.descrption} ',
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 16,
               ),
             ),
@@ -106,9 +154,8 @@ class _TaskWidgetState extends State<TaskWidget> {
       ),
     );
   }
+
+  
 }
 
-Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
-  return await Navigator.push(
-      context, MaterialPageRoute(builder: (context) => screen));
-}
+

@@ -12,6 +12,7 @@ import 'package:workos/screens/auth/login.dart';
 import 'package:workos/user_state.dart';
 
 import '../../constants.dart';
+import '../../core/utils.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({Key? key}) : super(key: key);
@@ -69,12 +70,12 @@ class _SignUpScreenState extends State<SignUpScreen>
         }).catchError((e) {
           setState(() {
             isLoading = false;
-            showSnakError(e.toString());
+            showSnakError(e.toString(),context);
           });
         });
       }
     } else {
-      showSnakError('Image is required');
+      showSnakError('Image is required',context);
     }
     setState(() {
       isLoading = false;
@@ -709,21 +710,5 @@ class _SignUpScreenState extends State<SignUpScreen>
         });
   }
 
-  void showSnakError(error) {
-    final myErrorSnack = SnackBar(
-      content: Text(error),
-      duration: const Duration(
-        seconds: 3,
-      ),
-      backgroundColor: Colors.pink,
-      shape: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      width: double.infinity,
-      behavior: SnackBarBehavior.floating,
-      elevation: 10,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(myErrorSnack);
-  }
+ 
 }

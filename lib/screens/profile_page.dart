@@ -24,6 +24,7 @@ String? image;
 String? urlImage =
     'https://www.seekpng.com/png/full/110-1100707_person-avatar-placeholder.png';
 bool isTheSameUser = false;
+bool isLoading = false;
 
 class _ProfilePageState extends State<ProfilePage> {
   // String userUid = FirebaseAuth.instance.currentUser!.uid;
@@ -36,32 +37,39 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   void getUserDataFromFireBase() async {
-    final DocumentSnapshot userDocData = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(widget.userUid)
-        .get();
+    try {
+      isLoading = true;
+      final DocumentSnapshot userDocData = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userUid)
+          .get();
 
-    if (userDocData == null) {
-      return;
-    } else {
-      name = userDocData.get('name');
-      email = userDocData.get('email');
-      phoneNumber = userDocData.get('phone');
-      position = userDocData.get('position');
-      Timestamp createdAt = userDocData.get('date');
-      var date = createdAt.toDate();
-      joindate = '${date.year}-${date.month}-${date.day}';
-      image = userDocData.get('image');
+      if (userDocData == null) {
+        return;
+      } else {
+        name = userDocData.get('name');
+        email = userDocData.get('email');
+        phoneNumber = userDocData.get('phone');
+        position = userDocData.get('position');
+        Timestamp createdAt = userDocData.get('date');
+        var date = createdAt.toDate();
+        joindate = '${date.year}-${date.month}-${date.day}';
+        image = userDocData.get('image');
+      }
+
+      FirebaseAuth auth = FirebaseAuth.instance;
+      User? user = auth.currentUser;
+      String uid = user!.uid;
+      print('User Uid=${widget.userUid}');
+      setState(() {
+        isTheSameUser = uid == widget.userUid;
+        print('isTheSameUser $isTheSameUser');
+      });
+    } on Exception catch (e) {
+      isLoading = false;
+    } finally {
+      isLoading = false;
     }
-   
-    FirebaseAuth auth = FirebaseAuth.instance;
-    User? user = auth.currentUser;
-    String uid = user!.uid;
-     print('User Uid=${widget.userUid}');
-    setState(() {
-      isTheSameUser = uid == widget.userUid;
-      print('isTheSameUser $isTheSameUser');
-    });
   }
 
   @override
@@ -82,7 +90,28 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       drawer: const DrawerWidget(),
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(children: [
+      body: isLoading? Center(
+              child: Container(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Loading Data',
+                      style: TextStyle(
+                          color: AppConstants.kDarkBlue,
+                          fontSize: 25,
+                          fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(
+                      height: 20,
+                    ),
+                    LinearProgressIndicator(
+                      color: AppConstants.kDarkBlue,
+                    )
+                  ],
+                ),
+              ),
+            ):Stack(children: [
         SingleChildScrollView(
           child: Card(
             margin: const EdgeInsets.all(30),
@@ -147,31 +176,33 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(
                     height: 20,
                   ),
-                isTheSameUser ?Container():Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        SocialMediaBottons(
-                            color: Colors.red,
-                            onPressed: () {
-                              sendWhatsAppMessage();
-                            },
-                            icon: Icons.whatsapp,
-                            socialIconColor: Colors.green),
-                        SocialMediaBottons(
-                            color: Colors.red,
-                            onPressed: () {
-                              sendEmailMessage();
-                            },
-                            icon: Icons.message,
-                            socialIconColor: Colors.red),
-                        SocialMediaBottons(
-                            color: Colors.red,
-                            onPressed: () {
-                              makePhoneCall();
-                            },
-                            icon: Icons.call,
-                            socialIconColor: Colors.purple),
-                      ]),
+                  isTheSameUser
+                      ? Container()
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                              SocialMediaBottons(
+                                  color: Colors.red,
+                                  onPressed: () {
+                                    sendWhatsAppMessage();
+                                  },
+                                  icon: Icons.whatsapp,
+                                  socialIconColor: Colors.green),
+                              SocialMediaBottons(
+                                  color: Colors.red,
+                                  onPressed: () {
+                                    sendEmailMessage();
+                                  },
+                                  icon: Icons.message,
+                                  socialIconColor: Colors.red),
+                              SocialMediaBottons(
+                                  color: Colors.red,
+                                  onPressed: () {
+                                    makePhoneCall();
+                                  },
+                                  icon: Icons.call,
+                                  socialIconColor: Colors.purple),
+                            ]),
                   const SizedBox(
                     height: 20,
                   ),

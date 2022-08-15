@@ -9,6 +9,8 @@ import 'package:workos/screens/profile_page.dart';
 import 'package:workos/screens/tasks.dart';
 import 'package:workos/user_state.dart';
 
+import '../core/utils.dart';
+
 class DrawerWidget extends StatelessWidget {
   const DrawerWidget({Key? key}) : super(key: key);
 
@@ -46,7 +48,7 @@ class DrawerWidget extends StatelessWidget {
               text: 'All tasks',
               icon: Icons.task_outlined,
               onTap: () {
-                navigateToPage(context, TasksScreen());
+                navigateToPageAndFinsh(context, const TasksScreen());
               }),
           ListTielsWidget(
               onTap: () {
@@ -55,7 +57,7 @@ class DrawerWidget extends StatelessWidget {
                 final userUid = user!.uid;
 
                // String userUid = FirebaseAuth.instance.currentUser!.uid;
-                navigateToPage(
+                navigateToPageAndFinsh(
                     context,
                     ProfilePage(
                       userUid: userUid,
@@ -67,14 +69,14 @@ class DrawerWidget extends StatelessWidget {
               text: 'Registerd workers',
               icon: Icons.workspaces_outline,
               onTap: () {
-                navigateToPage(context, const AllWorkers());
+                navigateToPageAndFinsh(context, const AllWorkers());
               }),
           ListTielsWidget(
               text: 'Add task',
               icon: Icons.add_task_outlined,
               onTap: () {
                 print('task add presed');
-                navigateToPage(context, const AddTaskScreen());
+                navigateToPageAndFinsh(context, const AddTaskScreen());
               }),
           const Divider(
             thickness: 1,
@@ -90,10 +92,7 @@ class DrawerWidget extends StatelessWidget {
     );
   }
 
-  Future<Object?> navigateToPage(BuildContext context, Widget screen) async {
-    return await Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (context) => screen));
-  }
+  
 }
 
 void showsignOutdialog(BuildContext context) {

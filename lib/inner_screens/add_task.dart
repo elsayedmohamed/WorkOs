@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:toast/toast.dart';
+import 'package:uuid/uuid.dart';
 import 'package:workos/constants.dart';
 
 import '../widgets/drawer_widget.dart';
@@ -25,6 +27,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
   FocusNode passwordFocusNode = FocusNode();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   Timestamp? deadLineTimeStamp;
+  bool isUploading = false;
   void formLoginSubmit() {
     var isValid = _formKey.currentState!.validate();
     if (isValid) {
@@ -156,45 +159,47 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
                     ],
                   ),
                 ),
-                Align(
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 150,
-                    child: MaterialButton(
-                      height: 55,
-                      color: Colors.pink.shade600,
-                      elevation: 10,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(13),
-                        side: BorderSide.none,
-                      ),
-                      onPressed: () {
-                        saveTaskData();
-                      },
-                      child: Row(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            'Upload',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                isUploading
+                    ? const Center(child: CircularProgressIndicator())
+                    : Align(
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: 150,
+                          child: MaterialButton(
+                            height: 55,
+                            color: Colors.pink.shade600,
+                            elevation: 10,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(13),
+                              side: BorderSide.none,
+                            ),
+                            onPressed: () {
+                              saveTaskData();
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.max,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: const [
+                                Text(
+                                  'Upload',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                SizedBox(
+                                  width: 5,
+                                ),
+                                Icon(
+                                  Icons.upload_file_outlined,
+                                  color: Colors.white,
+                                ),
+                              ],
                             ),
                           ),
-                          SizedBox(
-                            width: 5,
-                          ),
-                          Icon(
-                            Icons.upload_file_outlined,
-                            color: Colors.white,
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
-                  ),
-                ),
                 const SizedBox(
                   width: 10,
                 ),
@@ -211,7 +216,7 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     final FirebaseAuth auth = FirebaseAuth.instance;
     User? user = auth.currentUser;
     final userUid = user!.uid;
-    FirebaseStorage storage = FirebaseStorage.instance;
+    // FirebaseStorage storage = FirebaseStorage.instance;
 
     final ref = FirebaseStorage.instance
         .ref()
@@ -222,19 +227,56 @@ class _AddTaskScreenState extends State<AddTaskScreen> {
     // url = await ref.getDownloadURL();
 
     FirebaseFirestore store = FirebaseFirestore.instance;
-    await store.collection('tasks').doc(auth.currentUser!.uid).set({
-      'taskId': 'taskId',
-      'uploadedBy': userUid,
-      'taskCategory': categoryController.text,
-      'taskTitle': titleController.text,
-      'taskDescription': descriptionController.text,
-      // 'position': categoryController.text,
-      'deadLineDate': deadLineDateController.text,
-      'deadLineDateTimeStamp': deadLineTimeStamp,
-      'taskComments': [],
-      'isDone': false,
-      'createdAt': Timestamp.now(),
+
+    final String taskId;
+    taskId = Uuid().v4();
+    setState(() {
+      isUploading = false;
     });
+    try {
+      setState(() {
+        isUploading = true;
+      });
+      if (categoryController.text == 'Task category' ||
+          deadLineDateController.text == 'Pick up a date') {
+        showToast('Please Choose fields', duration: 3);
+        return;
+      }
+      await store.collection('tasks').doc(taskId).set({
+        'taskId': taskId,
+        'uploadedBy': userUid,
+        'taskCategory': categoryController.text,
+        'taskTitle': titleController.text,
+        'taskDescription': descriptionController.text,
+        // 'position': categoryController.text,
+        'deadLineDate': deadLineDateController.text,
+        'deadLineDateTimeStamp': deadLineTimeStamp,
+        'taskComments': [],
+        'isDone': false,
+        'createdAt': Timestamp.now(),
+      });
+      showToast('Task added sucsessfully', duration: 3, gravity: Toast.bottom);
+      setState(() {
+        categoryController.text = 'Task category';
+        titleController.clear();
+        deadLineDateController.clear();
+        deadLineDateController.text = 'Pick up a date';
+        descriptionController.clear();
+      });
+    } catch (error) {
+      setState(() {
+        isUploading = false;
+      });
+    } finally {
+      setState(() {
+        isUploading = false;
+      });
+    }
+  }
+
+  void showToast(String msg, {int? duration, int? gravity}) {
+    ToastContext().init(context);
+    Toast.show(msg, duration: duration, gravity: gravity);
   }
 
   Future<dynamic> showCategoriesDialog(BuildContext context) {
