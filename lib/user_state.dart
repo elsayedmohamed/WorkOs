@@ -14,7 +14,7 @@ class UserStateScreen extends StatelessWidget {
           if (userSnapshot.data == null) {
             return const LoginScreen();
           } else if (userSnapshot.hasData) {
-            return TasksScreen();
+            return const TasksScreen();
           } else if (userSnapshot.hasError) {
             return const Scaffold(
               body: Center(child: Text('Error occured')),

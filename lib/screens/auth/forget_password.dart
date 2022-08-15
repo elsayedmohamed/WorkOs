@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:workos/core/utils.dart';
 
 class ForgetScreen extends StatefulWidget {
   const ForgetScreen({Key? key}) : super(key: key);
@@ -18,8 +20,17 @@ class _ForgetScreenState extends State<ForgetScreen>
 
   final formKey = GlobalKey<FormState>();
 
-  void forgetPasswordCT() {
-    print(' forgetPasswordController.text  ${forgetPasswordController.text}');
+  void forgetPasswordCT() async {
+    if (forgetPasswordController.text.isEmpty) {
+      showSnakError('Please Write your email to reset password', context);
+    }
+    else{
+       await FirebaseAuth.instance.sendPasswordResetEmail(
+        email: forgetPasswordController.text.toLowerCase().trim());
+
+    showSnakError('Check your Email to rest password', context);
+    }
+   
   }
 
   @override
@@ -120,11 +131,9 @@ class _ForgetScreenState extends State<ForgetScreen>
                       filled: true,
                       fillColor: Colors.white,
                       hintText: 'Email',
-                      
                       hintStyle: const TextStyle(
                         color: Colors.black,
                       ),
-                      
                       enabledBorder: const UnderlineInputBorder(
                         borderSide: BorderSide(
                           color: Colors.black,
